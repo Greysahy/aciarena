@@ -28,8 +28,8 @@ class QATask(BaseTask):
                 
         return ""
 
-    
-    def verify(self, mas_response):
+    def verify(self):
+        mas_response = self.answer["response"]
         extracted_answer = self.extract_answer(mas_response)
         result = float(extracted_answer == self.ground_truth)
         return result

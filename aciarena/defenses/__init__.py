@@ -1,2 +1,2 @@
-from .safety_filter import SafetyFilter
+from .aci_sentinel import ACISentinel
 from .bert_detector import BertDetector

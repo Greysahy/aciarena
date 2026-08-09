@@ -3,9 +3,14 @@ import argparse
 import json
 import os
 import yaml
+from pathlib import Path
+
+
+PROJECT_ROOT = Path(__file__).resolve().parent
 
 def main(args):
-    model_config = yaml.safe_load(open("configs/model.yaml"))
+    with (PROJECT_ROOT / "configs/model.yaml").open("r", encoding="utf-8") as f:
+        model_config = yaml.safe_load(f)
     model_name = model_config.get("model_name", "unknown").replace("/", "_")
 
     save_dir = f"logs/{model_name}/{args.task_domain}/{args.mas}/{args.suite}"
@@ -67,6 +72,7 @@ if __name__ == "__main__":
         "--task_domain",
         type=str,
         default="code",
+        choices=("math", "code", "sci", "medicine"),
         help="Benign task domain."
     )
     parser.add_argument(
@@ -90,4 +96,3 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
     main(args)
-    

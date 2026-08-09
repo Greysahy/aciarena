@@ -6,13 +6,25 @@ from tqdm import tqdm
 import yaml
 import json
 import copy
+from pathlib import Path
+
+
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+DATASET_DIR = Path(__file__).resolve().parent / "datasets"
+
+
+def _load_json(path: Path):
+    with path.open("r", encoding="utf-8") as f:
+        return json.load(f)
 
 class BaseEvaluationSuite:
     def __init__(self, args):
         self.args = args
         self.logger = build_logger(args=args)
-        self.llm_config = yaml.safe_load(open("configs/model.yaml", "r"))
-        self.judge_config = yaml.safe_load(open("configs/judge.yaml", "r"))
+        with (PROJECT_ROOT / "configs/model.yaml").open("r", encoding="utf-8") as f:
+            self.llm_config = yaml.safe_load(f)
+        with (PROJECT_ROOT / "configs/judge.yaml").open("r", encoding="utf-8") as f:
+            self.judge_config = yaml.safe_load(f)
         self.mas_config = {
             "args": args,
             "llm_config": self.llm_config,
@@ -31,12 +43,15 @@ class BaseEvaluationSuite:
                 raise ValueError(f"Unsupported MAS for math domain: {self.args.mas}")
         elif self.args.task_domain == 'code':
             self.load_code_tasks()
+        elif self.args.task_domain == 'sci':
+            self.load_sci_tasks()
+        elif self.args.task_domain == 'medicine':
+            self.load_medicine_tasks()
         else:
             raise ValueError(f"Unsupported task domain: {self.args.task_domain}")
     
     def load_math_tasks(self):
-        with open('aciarena/evaluation/datasets/aciarena_math.json', 'r') as f:
-            math_data = json.load(f)
+        math_data = _load_json(DATASET_DIR / "aciarena_math.json")
 
         for item in tqdm(math_data, desc="Processing Math Task"):
             problem = item["problem"]
@@ -44,13 +59,28 @@ class BaseEvaluationSuite:
             self.tasks.append(MathTask(query=problem, ground_truth=answer))
     
     def load_code_tasks(self):
-        with open('aciarena/evaluation/datasets/aciarena_code.json', 'r') as f:
-            code_data = json.load(f)
+        code_data = _load_json(DATASET_DIR / "aciarena_code.json")
 
         for item in tqdm(code_data, desc="Processing Code Task"):
             problem  = item["problem"]
             answer = item["answer"]
             self.tasks.append(CodeTask(query=problem , ground_truth=answer))
+
+    def load_sci_tasks(self):
+        sci_data = _load_json(DATASET_DIR / "aciarena_sci.json")
+
+        for item in tqdm(sci_data, desc="Processing Sci Task"):
+            self.tasks.append(QATask(
+                query=item["problem"], ground_truth=item["answer"]
+            ))
+
+    def load_medicine_tasks(self):
+        medicine_data = _load_json(DATASET_DIR / "aciarena_med.json")
+
+        for item in tqdm(medicine_data, desc="Processing Medicine Task"):
+            self.tasks.append(QATask(
+                query=item["problem"], ground_truth=item["answer"]
+            ))
 
     def eval(self):
         """
